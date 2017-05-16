@@ -44,9 +44,13 @@ for instructions and the project rubric.
 
 In this video, the derivative term is too small, and the car oscillates heavily.
 
+[Underdamped Video](https://youtu.be/9VdKtL6c-eg)
+
 ### Overdamped (Resistance Too High)
 
 In this video, I've derivative term high enough where the controller is overdamped, and the car is taking a long time to adjust to center.
+
+[Overdamped Video](https://www.youtube.com/watch?v=fxbpE9z046g)
 
 ## Parameter Tuning
 
@@ -78,4 +82,8 @@ First I started with the proportional gain, adjusting until the car oscillated e
 |  | P | I | D |
 | -- | -- | -- | -- |
 | p | .16 | 0 | 2 |
+
+## Final Video
+
+[Final Video](https://www.youtube.com/watch?v=c-n_zz25-IA)
 
