@@ -2,6 +2,7 @@
 #include <iostream>
 #include "json.hpp"
 #include "PID.h"
+#include "twiddle.h"
 #include <math.h>
 
 // for convenience
@@ -28,36 +29,67 @@ std::string hasData(std::string s) {
   return "";
 }
 
+void reset_simulator(uWS::WebSocket<uWS::SERVER>& ws)
+{
+  // reset
+  std::string msg("42[\"reset\", {}]");
+  ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+}
+
 int main()
 {
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
+  Twiddle twiddle;
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // std::vector<double> p = twiddle.Parameters();
+  pid.setParameters(0.16, 0, 2);
+
+  int n = 0;
+  int limit = 1000;
+  double error = 0.0;
+  bool use_twiddle = false;
+
+  h.onMessage([&pid, &twiddle, &n, &limit, &use_twiddle](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
+
     if (length && length > 2 && data[0] == '4' && data[1] == '2')
     {
-      auto s = hasData(std::string(data));
+      auto s = hasData(std::string(data).substr(0, length));
       if (s != "") {
+
         auto j = json::parse(s);
         std::string event = j[0].get<std::string>();
+
         if (event == "telemetry") {
           // j[1] is the data JSON object
+
           double cte = std::stod(j[1]["cte"].get<std::string>());
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
-          
+
+          if (
+            use_twiddle &&
+            n == limit 
+            // || (-2.5 > cte || cte > 2.5) && n > 0
+          ) {
+            // tune parameters
+            twiddle.tune(pid.TotalError() / n);
+            std::vector<double> p = twiddle.Parameters();
+            pid.setParameters(p[0], 0, p[1]);
+            // reset simulator
+            n = 0;
+            reset_simulator(ws);
+            return;
+          }
+
+          pid.UpdateError(cte);
+          steer_value = pid.Steer();
+
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
@@ -67,6 +99,8 @@ int main()
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+
+          n += 1;
         }
       } else {
         // Manual driving

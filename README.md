@@ -27,58 +27,55 @@ Self-Driving Car Engineer Nanodegree Program
 3. Compile: `cmake .. && make`
 4. Run it: `./pid`. 
 
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
 ## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
 
 More information is only accessible by people who are already enrolled in Term 2
 of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
 for instructions and the project rubric.
+## PID Controller Overview
 
-## Hints!
+| Component | Description |
+| --------- | ----------- |
+| Proportional \(P\) | Steers proportional to the cross track error.  The car steers harder the larger the cross track error.  With proportional control alone, the car tends to repeatedly overshoot the center line. |
+| Integral (I) | The integral component serves to offset possible bias in steering.  An example of this could be wind force that pushes the car away from the center line. |
+| Derivative (D) | Temporal derivative of the cross track error.  The derivative component smooths the oscillation or overshooting effect of the proportional component by adding resistance as the car approaches the center line.  With too little resistance, and the car still oscillates, but too much resistance causes the car to take too long to adjust to center. |
 
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
+### Underdamped (Resistance Too Low)
 
-## Call for IDE Profiles Pull Requests
+In this video, the derivative term is too small, and the car oscillates heavily.
 
-Help your fellow students!
+### Overdamped (Resistance Too High)
 
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
+In this video, I've derivative term high enough where the controller is overdamped, and the car is taking a long time to adjust to center.
 
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
+## Parameter Tuning
 
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
+Parameters were initially obtained through the Twiddle algorithm.  The algorithm can be found in `src/twiddle.cpp`, and has designed so that it works well within the simulated environment.  In particular, a `cycle_` variable is used to keep track which part of the flow the current trial is using.  For example, a cycle of `UP` indicates that we are running a trial with `Dp` added to the base parameter value.
 
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
+### Initial Parameter Values
 
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
+|  | P | I | D |
+| -- | -- | -- | -- |
+| p | 0 | 0 | 0 |
+| Dp | 0.1 | 0.1 | 0.1 |
 
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
+### Twiddle Tuned Values
+
+Note: Final value for integral term is zero because there is no steering bias in the simulated environment.
+
+|  | P | I | D |
+| -- | -- | -- | -- |
+| p | .65672 | 0 | 8.99679 |
+
+## Manual Tuning
+
+It seems that after twiddle tuning the parameters are stuck in a local minimum and the algorithm car is not able to complete the entire track without touching the edges.  Manual tuning actually turned out to be much more effective.
+
+First I started with the proportional gain, adjusting until the car oscillated enough where it oscillated, but not wildly.  Next, slowly I adjusted to the derivative gain, dampening the effects of the proportional component until the car no longer oscillated heavily.  After dampening the oscillation I adjusted the proportional term again slightly so that the car could make the sharpest turns.  The integral term is kept at zero.
+
+### Manual Tuned Values
+
+|  | P | I | D |
+| -- | -- | -- | -- |
+| p | .16 | 0 | 2 |
+
