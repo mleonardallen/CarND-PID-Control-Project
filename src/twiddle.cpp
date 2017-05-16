@@ -58,7 +58,6 @@ void Twiddle::tune(double error) {
 }
 
 vector<double> Twiddle::Parameters() {
-    std::cout << "getting parameters" << std::endl;
     std::cout << "p: " << p_[0] << " " << p_[1] << std::endl;
     std::cout << "Dp: " << Dp_[0] << " " << Dp_[1] << std::endl;
     return p_;
